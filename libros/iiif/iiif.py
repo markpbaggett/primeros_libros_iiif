@@ -25,7 +25,7 @@ class IIIFManifest:
             try:
                 manifest.make_canvas_from_iiif(
                     url=canvas,
-                    label=f"Page {i}",
+                    label=self.dspace_data.uuid,
                     id=f"https://raw.githubusercontent.com/markpbaggett/static_iiif/main/manifests/tamu/{self.dspace_data.uuid}.json/canvas/{i}",
                     anno_id=f"https://raw.githubusercontent.com/markpbaggett/static_iiif/main/manifests/tamu/{self.dspace_data.uuid}.json/canvas/{i}/annotation/1",
                     anno_page_id=f"https://raw.githubusercontent.com/markpbaggett/static_iiif/main/manifests/tamu/{self.dspace_data.uuid}.json/canvas/{i}/canvas/{i}/annotation/1/page/1",
@@ -81,5 +81,5 @@ class IIIFManifest:
 
 
 if __name__ == "__main__":
-    x = IIIFManifest("https://oaktrust.library.tamu.edu/rdf/handle/1969.1/92214")
+    x = IIIFManifest("https://oaktrust.library.tamu.edu/rdf/handle/1969.1/94022")
     x.write()
