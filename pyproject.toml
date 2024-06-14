@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "primeros-libros-iiif"
+version = "0.1.0"
+description = "Creates a IIIF Collection and Manifests for Works with Files in Primeros Libros"
+authors = ["Mark Baggett <markpbaggett@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+iiif-prezi3 = "^1.2.1"
+rdflib = "^7.0.0"
+requests = "^2.32.3"
+aiohttp = "^3.9.5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
