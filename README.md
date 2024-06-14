@@ -1,3 +1,3 @@
 # Primeros Libros IIIF
 
-A quick rethink to rewrite Primeros Libros IIIF from DSPACE data
+A Reimagination to Rethink Primeros Libros IIIF from DSPACE Works

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "primeros-libros-iiif"
+name = "libros"
 version = "0.1.0"
 description = "Creates a IIIF Collection and Manifests for Works with Files in Primeros Libros"
 authors = ["Mark Baggett <markpbaggett@gmail.com>"]

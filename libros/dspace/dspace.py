@@ -5,7 +5,7 @@ from rdflib.namespace import DC, DCTERMS
 import requests
 
 DSPACE = Namespace('http://digital-repositories.org/ontologies/dspace/0.1.0#')
-BIBO = Namespace('http://purl.org/dc/terms/bibo#')
+BIBO = Namespace('http://purl.org/ontology/bibo/')
 
 
 class DspaceWork:
