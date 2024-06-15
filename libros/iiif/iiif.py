@@ -9,16 +9,20 @@ class IIIFManifest:
     def __init__(self, uri):
         self.uri = uri
         self.config = config.configs['helpers.auto_fields.AutoLang'].auto_lang = "en"
+        print("Grabbing DSPACE data")
         self.dspace_data = DspaceWork(uri)
+        print("Building Manifest")
         self.manifest = self.__build_manifest()
 
     def __build_manifest(self):
+        rendering = self.__add_rendering()
         manifest = Manifest(
             id=f"https://raw.githubusercontent.com/markpbaggett/static_iiif/main/manifests/tamu/{self.dspace_data.uuid}.json",
             label=self.dspace_data.labels,
             metadata=self.__build_metadata(),
             rights="http://rightsstatements.org/vocab/NoC-US/1.0/",
-            homepage=self.__build_home_page()
+            homepage=self.__build_home_page(),
+            rendering=rendering[0]
         )
         i = 1
         for canvas in self.dspace_data.images:
@@ -79,7 +83,18 @@ class IIIFManifest:
             }
         ]
 
+    def __add_rendering(self):
+        return [
+            {
+                "id": rendering,
+                "type": "Text",
+                "label": {"en": ["Download PDF"]},
+                "format": "application/pdf"
+            }
+            for rendering in self.dspace_data.rendering
+        ]
+
 
 if __name__ == "__main__":
-    x = IIIFManifest("https://oaktrust.library.tamu.edu/rdf/handle/1969.1/94022")
+    x = IIIFManifest("https://oaktrust.library.tamu.edu/rdf/handle/1969.1/94017")
     x.write()

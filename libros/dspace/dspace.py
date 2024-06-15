@@ -3,6 +3,7 @@ import asyncio
 from rdflib import Graph, Namespace
 from rdflib.namespace import DC, DCTERMS
 import requests
+from aiohttp import ClientTimeout
 
 DSPACE = Namespace('http://digital-repositories.org/ontologies/dspace/0.1.0#')
 BIBO = Namespace('http://purl.org/ontology/bibo/')
@@ -20,6 +21,7 @@ class DspaceWork:
         self.metadata_over_rest = self.__get_metadata_over_rest()
         self.labels = self.__get_labels()
         self.homepage = self.__get_homepage()
+        self.rendering = self.get_rendering()
 
     def __request_data(self):
         headers = {
@@ -37,21 +39,37 @@ class DspaceWork:
             for s, p, o in self.graph if p == DSPACE.hasBitstream and '.jpf' in str(o)
         ]
 
-    @staticmethod
-    async def fetch(session, url):
-        async with session.get(url) as response:
-            return await response.json()
+    def get_rendering(self):
+        return [
+            str(o).replace(
+                "https://oaktrust.library.tamu.edu/bitstream/",
+                "https://api.library.tamu.edu/iiif-service/dspace/canvas/"
+            )
+            for s, p, o in self.graph if p == DSPACE.hasBitstream and '.pdf' in str(o)
+        ]
+
+    async def fetch(self, session, url, index):
+        try:
+            async with session.get(url) as response:
+                response.raise_for_status()
+                return index, await response.json()
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            print(f"Error fetching {url}: {e}")
+            return index, None
 
     async def fetch_all(self, urls):
-        async with aiohttp.ClientSession() as session:
-            tasks = [self.fetch(session, url) for url in urls]
+        timeout = ClientTimeout(total=60)  # Set a total timeout of 60 seconds
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            tasks = [self.fetch(session, url, index) for index, url in enumerate(urls)]
             responses = await asyncio.gather(*tasks)
-            return responses
+            responses.sort(key=lambda x: x[0])
+            return [response for index, response in responses if response]
 
     async def process_canvases(self):
         urls = self.get_canvases()
+        urls = sorted(urls)
         responses = await self.fetch_all(urls)
-        result = [response["images"][0]["@id"] for response in responses]
+        result = [response["images"][0]["@id"] for response in responses if response]
         return result
 
     def grab_canvases_asynchronously(self):
@@ -102,8 +120,12 @@ class DspaceWork:
         }
 
     def __get_uuid(self):
-        r = requests.get(f"https://oaktrust.library.tamu.edu/rest/handle/1969.1/{self.handle}").json()
-        return r['uuid']
+        try:
+            r = requests.get(f"https://oaktrust.library.tamu.edu/rest/handle/1969.1/{self.handle}").json()
+            return r['uuid']
+        except requests.RequestException as e:
+            print(f"Error fetching UUID for {self.handle}: {e}")
+            return None
 
     def __get_metadata_over_rest(self):
         data = {
@@ -116,17 +138,20 @@ class DspaceWork:
                 "es": [],
             }
         }
-        r = requests.get(
-            f"https://oaktrust.library.tamu.edu/rest/items/{self.uuid}/metadata"
-        ).json()
-        for entry in r:
-            if entry['key'] == 'dc.subject.other' or entry['key'] == 'dc.subject':
-                data['Subjects'][entry['language']].append(entry['value'])
-            elif entry['key'] == 'dc.description':
-                data['Description'][entry['language']].append(entry['value'])
+        try:
+            r = requests.get(
+                f"https://oaktrust.library.tamu.edu/rest/items/{self.uuid}/metadata"
+            ).json()
+            for entry in r:
+                if entry['key'] == 'dc.subject.other' or entry['key'] == 'dc.subject':
+                    data['Subjects'][entry['language']].append(entry['value'])
+                elif entry['key'] == 'dc.description':
+                    data['Description'][entry['language']].append(entry['value'])
+        except requests.RequestException as e:
+            print(f"Error fetching metadata for {self.uuid}: {e}")
         return data
 
 
 if __name__ == "__main__":
-    x = DspaceWork("https://oaktrust.library.tamu.edu/rdf/handle/1969.1/92214")
-    print(x.metadata_over_rest)
+    x = DspaceWork("https://oaktrust.library.tamu.edu/rdf/handle/1969.1/92820")
+    print(x.images)
