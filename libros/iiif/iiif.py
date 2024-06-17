@@ -98,10 +98,11 @@ class IIIFManifest:
 
 
 class Thumbnail:
+    # @Todo: Make async
     def __init__(self, image_path):
         self.image_path = image_path
         self.best_size = self.__get_best_size()
-        self.full_path = f"{self.image_path}/full/{self.best_size.get('width')},{self.best_size.get('height')}/0/default.jpg"
+        self.full_path = f"{self.image_path.replace('/info.json', '')}/full/{self.best_size.get('width')},{self.best_size.get('height')}/0/default.jpg"
 
     def __get_best_size(self):
         r = requests.get(f"{self.image_path}").json()
