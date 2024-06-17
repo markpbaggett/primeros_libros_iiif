@@ -1,5 +1,5 @@
 import requests
-from iiif_prezi3 import Manifest, config, KeyValueString
+from iiif_prezi3 import Manifest, config, KeyValueString, ResourceItem
 from libros import DspaceWork
 import json
 from time import sleep
@@ -26,10 +26,12 @@ class IIIFManifest:
         )
         i = 1
         for canvas in self.dspace_data.images:
+            thumbnail = Thumbnail(canvas).get()
             try:
                 manifest.make_canvas_from_iiif(
                     url=canvas,
                     label=self.dspace_data.uuid,
+                    thumbnail=thumbnail,
                     id=f"https://raw.githubusercontent.com/markpbaggett/static_iiif/main/manifests/tamu/{self.dspace_data.uuid}.json/canvas/{i}",
                     anno_id=f"https://raw.githubusercontent.com/markpbaggett/static_iiif/main/manifests/tamu/{self.dspace_data.uuid}.json/canvas/{i}/annotation/1",
                     anno_page_id=f"https://raw.githubusercontent.com/markpbaggett/static_iiif/main/manifests/tamu/{self.dspace_data.uuid}.json/canvas/{i}/canvas/{i}/annotation/1/page/1",
@@ -95,6 +97,39 @@ class IIIFManifest:
         ]
 
 
+class Thumbnail:
+    def __init__(self, image_path):
+        self.image_path = image_path
+        self.best_size = self.__get_best_size()
+        self.full_path = f"{self.image_path}/full/{self.best_size.get('width')},{self.best_size.get('height')}/0/default.jpg"
+
+    def __get_best_size(self):
+        r = requests.get(f"{self.image_path}").json()
+        try:
+            return r['sizes'][-3]
+        except requests.exceptions.JSONDecodeError:
+            return r['sizes'][1]
+
+    def get(self):
+        resource = ResourceItem(
+            id=self.full_path,
+            type="Image",
+            format="image/jpeg",
+            width=int(self.best_size.get('width')),
+            height=int(self.best_size.get('height'))
+        )
+        resource.make_service(
+            id=self.image_path,
+            type="http://iiif.io/api/image/2/context.json",
+            profile="http://iiif.io/api/image/2/level2.json",
+            version=2
+        )
+        return [resource]
+
+    def __str__(self):
+        return str(self.get())
+
+
 if __name__ == "__main__":
-    x = IIIFManifest("https://oaktrust.library.tamu.edu/rdf/handle/1969.1/94017")
+    x = IIIFManifest("https://oaktrust.library.tamu.edu/rdf/handle/1969.1/92825")
     x.write()
