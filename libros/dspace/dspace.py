@@ -48,14 +48,17 @@ class DspaceWork:
             for s, p, o in self.graph if p == DSPACE.hasBitstream and '.pdf' in str(o)
         ]
 
-    async def fetch(self, session, url, index):
-        try:
-            async with session.get(url) as response:
-                response.raise_for_status()
-                return index, await response.json()
-        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            print(f"Error fetching {url}: {e}")
-            return index, None
+    async def fetch(self, session, url, index, retries=3, backoff=5):
+        for attempt in range(retries):
+            try:
+                async with session.get(url) as response:
+                    response.raise_for_status()
+                    return index, await response.json()
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                print(f"Error fetching {url}: {e} (attempt {attempt + 1} of {retries})")
+                if attempt == retries - 1:
+                    return index, None
+                await asyncio.sleep(backoff)
 
     async def fetch_all(self, urls):
         timeout = ClientTimeout(total=60)  # Set a total timeout of 60 seconds
